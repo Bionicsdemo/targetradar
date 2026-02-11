@@ -52,6 +52,51 @@ function getTDL(profile: TargetProfile): string {
   return 'Tdark';
 }
 
+/** Lazy wrapper for 3D viewers — only loads when user clicks "Load 3D" */
+function Lazy3DSection({
+  title,
+  icon,
+  color,
+  stats,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  color: string;
+  stats: Array<{ label: string; value: string }>;
+  children: React.ReactNode;
+}) {
+  const [loaded, setLoaded] = useState(false);
+
+  if (loaded) return <>{children}</>;
+
+  return (
+    <div className="rounded-xl border border-white/5 overflow-hidden" style={{ backgroundColor: 'var(--surface-1)' }}>
+      <div className="p-6 flex flex-col items-center justify-center text-center gap-4">
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: color + '15', color }}>
+          {icon}
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-white mb-1">{title}</h3>
+          <div className="flex items-center justify-center gap-4 text-[11px] text-slate-500">
+            {stats.map((s) => (
+              <span key={s.label}>{s.label}: <span className="text-slate-300 font-mono">{s.value}</span></span>
+            ))}
+          </div>
+        </div>
+        <button
+          onClick={() => setLoaded(true)}
+          className="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+          style={{ backgroundColor: color + '15', color, border: `1px solid ${color}30` }}
+        >
+          Load 3D Viewer
+        </button>
+        <p className="text-[10px] text-slate-600">Click to load the interactive 3D structure viewer</p>
+      </div>
+    </div>
+  );
+}
+
 export default function AnalyzePage() {
   const params = useParams();
   const gene = (params.gene as string).toUpperCase();
@@ -341,28 +386,48 @@ export default function AnalyzePage() {
             {/* ── Section divider ── */}
             <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-2" />
 
-            {/* 3D Protein Structure */}
-            <StructurePanel
-              pdbId={profile.rawData.alphafold?.data?.pdbIds?.[0]}
-              uniprotId={profile.rawData.alphafold?.data?.uniprotId}
-              geneName={profile.gene}
-              pdbCount={profile.rawData.alphafold?.data?.pdbCount}
-              bestResolution={profile.rawData.alphafold?.data?.bestResolution}
-              avgPLDDT={profile.rawData.alphafold?.data?.avgPLDDT}
-              ligandBound={profile.rawData.alphafold?.data?.ligandBoundCount}
-            />
+            {/* 3D Protein Structure — lazy loaded to prevent browser crash on large proteins */}
+            <Lazy3DSection
+              title="3D Protein Structure"
+              icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" /></svg>}
+              color="#8B5CF6"
+              stats={[
+                { label: 'PDB Structures', value: String(profile.rawData.alphafold?.data?.pdbCount ?? 0) },
+                { label: 'pLDDT', value: profile.rawData.alphafold?.data?.avgPLDDT ? `${profile.rawData.alphafold.data.avgPLDDT.toFixed(0)}%` : 'N/A' },
+              ]}
+            >
+              <StructurePanel
+                pdbId={profile.rawData.alphafold?.data?.pdbIds?.[0]}
+                uniprotId={profile.rawData.alphafold?.data?.uniprotId}
+                geneName={profile.gene}
+                pdbCount={profile.rawData.alphafold?.data?.pdbCount}
+                bestResolution={profile.rawData.alphafold?.data?.bestResolution}
+                avgPLDDT={profile.rawData.alphafold?.data?.avgPLDDT}
+                ligandBound={profile.rawData.alphafold?.data?.ligandBoundCount}
+              />
+            </Lazy3DSection>
 
             {/* ── Section divider ── */}
             <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-2" />
 
-            {/* Protein-Ligand Docking */}
-            <DockingPanel
-              pdbId={profile.rawData.alphafold?.data?.pdbIds?.[0]}
-              uniprotId={profile.rawData.alphafold?.data?.uniprotId}
-              geneName={profile.gene}
-              ligandBoundCount={profile.rawData.alphafold?.data?.ligandBoundCount}
-              compounds={profile.rawData.chembl.data?.topCompounds}
-            />
+            {/* Protein-Ligand Docking — lazy loaded */}
+            <Lazy3DSection
+              title="Binding Site & Explorer"
+              icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="3" /><path d="M12 2v4m0 12v4m10-10h-4M6 12H2" /></svg>}
+              color="#14B8A6"
+              stats={[
+                { label: 'UniProt', value: profile.rawData.alphafold?.data?.uniprotId ?? 'N/A' },
+                { label: 'Compounds', value: String(profile.rawData.chembl.data?.topCompounds?.length ?? 0) },
+              ]}
+            >
+              <DockingPanel
+                pdbId={profile.rawData.alphafold?.data?.pdbIds?.[0]}
+                uniprotId={profile.rawData.alphafold?.data?.uniprotId}
+                geneName={profile.gene}
+                ligandBoundCount={profile.rawData.alphafold?.data?.ligandBoundCount}
+                compounds={profile.rawData.chembl.data?.topCompounds}
+              />
+            </Lazy3DSection>
 
             {/* ── Section divider ── */}
             <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-2" />
