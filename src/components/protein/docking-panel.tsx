@@ -50,6 +50,64 @@ function loadScript(): Promise<void> {
   return scriptLoadPromise;
 }
 
+/**
+ * Trim a large PDB file to only atoms within `radius` angstroms of a ligand.
+ * This prevents browser crashes when rendering huge proteins (e.g., PRKDC 39K atoms).
+ * Keeps: all HETATM lines for the ligand + all ATOM/HETATM lines within radius.
+ */
+function trimPDBToBindingSite(pdb: string, ligandResn: string, radius: number): string {
+  const lines = pdb.split('\n');
+
+  // Step 1: Find ligand atom coordinates
+  const ligandCoords: Array<[number, number, number]> = [];
+  const ligandLines: string[] = [];
+  const headerLines: string[] = [];
+  const atomLines: string[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith('HETATM') || line.startsWith('ATOM  ')) {
+      const resn = line.substring(17, 20).trim();
+      const x = parseFloat(line.substring(30, 38));
+      const y = parseFloat(line.substring(38, 46));
+      const z = parseFloat(line.substring(46, 54));
+
+      if (resn === ligandResn) {
+        ligandCoords.push([x, y, z]);
+        ligandLines.push(line);
+      } else {
+        atomLines.push(line);
+      }
+    } else if (line.startsWith('HEADER') || line.startsWith('TITLE') || line.startsWith('COMPND') || line.startsWith('END')) {
+      headerLines.push(line);
+    }
+  }
+
+  if (ligandCoords.length === 0) {
+    // No ligand found — return original (fallback)
+    return pdb;
+  }
+
+  // Step 2: Calculate ligand center
+  const cx = ligandCoords.reduce((s, c) => s + c[0], 0) / ligandCoords.length;
+  const cy = ligandCoords.reduce((s, c) => s + c[1], 0) / ligandCoords.length;
+  const cz = ligandCoords.reduce((s, c) => s + c[2], 0) / ligandCoords.length;
+  const r2 = radius * radius;
+
+  // Step 3: Keep only atoms within radius of ligand center
+  const nearbyLines = atomLines.filter((line) => {
+    const resn = line.substring(17, 20).trim();
+    if (resn === 'HOH' || resn === 'WAT') return false; // Skip water
+    const x = parseFloat(line.substring(30, 38));
+    const y = parseFloat(line.substring(38, 46));
+    const z = parseFloat(line.substring(46, 54));
+    const dx = x - cx, dy = y - cy, dz = z - cz;
+    return (dx * dx + dy * dy + dz * dz) <= r2;
+  });
+
+  // Step 4: Rebuild PDB
+  return [...headerLines, ...nearbyLines, ...ligandLines, 'END'].join('\n');
+}
+
 /* ── Compound 3D mini-viewer with 2D fallback (independent instance) ── */
 function CompoundViewer({
   smiles,
@@ -275,22 +333,24 @@ export function DockingPanel({
       // Step 2: Download PDB
       let pdbData: string | null = null;
       const targetPdbId = dockingInfo?.pdbId ?? pdbId;
-
-      // Max PDB size: 1.5MB — larger structures (e.g., PRKDC 3.3MB) crash the browser
-      const MAX_PDB_BYTES = 1_500_000;
+      const ligResn = dockingInfo?.ligandId ?? null;
 
       if (targetPdbId) {
         setLoadingMsg(`Fetching structure: ${targetPdbId.toUpperCase()}...`);
         const res = await fetch(`https://files.rcsb.org/download/${targetPdbId}.pdb`, {
-          signal: AbortSignal.timeout(10000),
+          signal: AbortSignal.timeout(15000),
         });
         if (res.ok) {
-          const text = await res.text();
-          if (text.length <= MAX_PDB_BYTES) {
-            pdbData = text;
-          } else {
-            setLoadingMsg('Structure too large for browser rendering, trying AlphaFold...');
+          let text = await res.text();
+
+          // For large PDB files (>1.5MB), trim to binding site region only
+          // This prevents browser crashes for huge proteins like PRKDC (3.3MB, 39K atoms)
+          if (text.length > 1_500_000 && ligResn) {
+            setLoadingMsg('Large structure — extracting binding site region...');
+            text = trimPDBToBindingSite(text, ligResn, 20);
           }
+
+          if (text.length > 0) pdbData = text;
         }
       }
 
@@ -300,15 +360,10 @@ export function DockingPanel({
         const afRes = await fetch(`https://alphafold.ebi.ac.uk/files/AF-${uniprotId}-F1-model_v6.pdb`, {
           signal: AbortSignal.timeout(10000),
         });
-        if (afRes.ok) {
-          const text = await afRes.text();
-          if (text.length <= MAX_PDB_BYTES) {
-            pdbData = text;
-          }
-        }
+        if (afRes.ok) pdbData = await afRes.text();
       }
 
-      if (!pdbData) throw new Error('Structure too large or unavailable for interactive 3D rendering');
+      if (!pdbData) throw new Error('No structure available (PDB and AlphaFold both failed)');
 
       // Step 3: Render
       setLoadingMsg('Rendering binding site...');
