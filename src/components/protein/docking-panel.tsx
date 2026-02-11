@@ -312,51 +312,70 @@ export function DockingPanel({
 
       viewer.addModel(pdbData, 'pdb');
 
-      // Expanded buffer list for ligand selection
-      const bufferResnames = ['HOH','WAT','GOL','PEG','SO4','PO4','ACT','EDO',
-        'CL','NA','MG','CA','ZN','MN','DMS','TRS','FMT','IMD','BME','MPD',
-        'EPE','MES','CIT','AZI','SCN','NO3','BR','IOD','FLC','CD','PE4',
-        'NAG','MAN','BGC','BU1','BEN','1PE','P6G','MLI'];
-
       const hasKnownLigand = !!dockingInfo?.ligandId;
 
-      // Ligand selector
-      const ligandSel = hasKnownLigand
+      // Ligand selector — either specific known drug or all non-buffer heteroatoms
+      const ligandSel: Record<string, unknown> = hasKnownLigand
         ? { resn: dockingInfo!.ligandId }
-        : { hetflag: true, resn: bufferResnames, invert: true };
+        : {
+            hetflag: true,
+            not: { resn: ['HOH','WAT','GOL','PEG','SO4','PO4','ACT','EDO',
+              'CL','NA','MG','CA','ZN','MN','DMS','TRS','FMT','IMD','BME','MPD',
+              'EPE','MES','CIT','AZI','SCN','NO3','BR','IOD','FLC','CD','PE4',
+              'NAG','MAN','BGC','BU1','BEN','1PE','P6G','MLI','AEDO','BEDO'] },
+          };
 
-      // 1. PROTEIN: translucent indigo ribbon
+      // ── STEP 1: Style the entire protein as translucent indigo ribbon ──
       viewer.setStyle({}, {
-        cartoon: { color: '#6366F1', opacity: 0.35, thickness: 0.4, arrows: true },
+        cartoon: { color: '#6366F1', opacity: 0.30, thickness: 0.4, arrows: true },
       });
 
-      // 2. BINDING POCKET: bright teal ribbon + side-chain lines
-      const pocketSel = {
+      // ── STEP 2: Style the LIGAND as bright green sticks (must come before pocket) ──
+      viewer.setStyle(ligandSel, {
+        stick: { radius: 0.3, colorscheme: 'greenCarbon' },
+      });
+      // Also add sphere representation for key atoms to make ligand pop
+      viewer.addStyle(ligandSel, {
+        sphere: { scale: 0.3, colorscheme: 'greenCarbon' },
+      });
+
+      // ── STEP 3: Highlight binding pocket residues near the ligand ──
+      // Select protein residues within 5A of the ligand
+      const pocketSel: Record<string, unknown> = {
         within: { distance: 5, sel: ligandSel },
         byres: true,
+        hetflag: false, // protein only, not the ligand itself
       };
+
+      // Override pocket cartoon to be brighter teal
       viewer.setStyle(pocketSel, {
-        cartoon: { color: '#14B8A6', opacity: 0.85, thickness: 0.5, arrows: true },
+        cartoon: { color: '#14B8A6', opacity: 0.90, thickness: 0.5, arrows: true },
       });
+      // Add thin side-chain sticks for pocket residues
       viewer.addStyle(pocketSel, {
-        line: { color: '#94A3B8', linewidth: 1.5 },
+        stick: { radius: 0.1, color: '#94A3B8' },
       });
 
-      // 3. LIGAND: bright green-carbon sticks
+      // ── STEP 4: Re-style ligand AGAIN to ensure it overrides any pocket selection ──
       viewer.setStyle(ligandSel, {
-        stick: { radius: 0.25, colorscheme: 'greenCarbon' },
+        stick: { radius: 0.3, colorscheme: 'greenCarbon' },
+      });
+      viewer.addStyle(ligandSel, {
+        sphere: { scale: 0.3, colorscheme: 'greenCarbon' },
       });
 
-      // 4. POCKET SURFACE: translucent amber
+      // ── STEP 5: Add translucent pocket surface ──
       try {
         viewer.addSurface(
           'VDW',
-          { opacity: 0.12, color: '#F59E0B' },
-          pocketSel,
+          { opacity: 0.10, color: '#F59E0B' },
+          { within: { distance: 6, sel: ligandSel }, byres: true },
         );
-      } catch { /* surface can fail */ }
+      } catch {
+        // Surface rendering can fail on some structures — skip silently
+      }
 
-      // 5. CAMERA: zoom to binding site
+      // ── STEP 6: Camera + animation ──
       viewer.zoomTo(ligandSel);
       viewer.spin('y', 0.3);
       viewer.render();
@@ -396,32 +415,29 @@ export function DockingPanel({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Toggle protein surface (molecular surface around the whole protein)
+  // Toggle protein surface overlay
   useEffect(() => {
     if (!viewerRef.current) return;
     const viewer = viewerRef.current;
     viewer.removeAllSurfaces();
     if (showSurface) {
-      // Full protein molecular surface
-      viewer.addSurface(
-        'MS' as unknown,
-        { opacity: 0.18, color: '#6366F1', wireframe: false },
-        { hetflag: false },
-      );
+      try {
+        viewer.addSurface(
+          'MS' as unknown,
+          { opacity: 0.15, color: '#6366F1' },
+          { hetflag: false },
+        );
+      } catch { /* can fail */ }
     }
-    // Always re-add pocket surface
+    // Re-add pocket surface around ligand
     try {
-      const bufferResnames = ['HOH','WAT','GOL','PEG','SO4','PO4','ACT','EDO',
-        'CL','NA','MG','CA','ZN','MN','DMS','TRS','FMT','IMD','BME','MPD',
-        'EPE','MES','CIT','AZI','SCN','NO3','BR','IOD','FLC','CD','PE4',
-        'NAG','MAN','BGC','BU1','BEN','1PE','P6G','MLI'];
-      const ligandSel = dockingLigand
-        ? { hetflag: true, resn: bufferResnames, invert: true }
+      const ligSel: Record<string, unknown> = dockingPdbId
+        ? { hetflag: true, not: { resn: ['HOH','WAT','GOL','PEG','SO4','PO4','ACT','EDO','CL','NA','MG','CA','ZN','MN','NO3','DMS','AEDO','BEDO'] } }
         : {};
       viewer.addSurface(
         'VDW',
-        { opacity: 0.12, color: '#F59E0B' },
-        { within: { distance: 5, sel: ligandSel }, byres: true },
+        { opacity: 0.10, color: '#F59E0B' },
+        { within: { distance: 6, sel: ligSel }, byres: true },
       );
     } catch {
       // Pocket surface can fail -- skip
