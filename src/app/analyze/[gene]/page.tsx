@@ -14,6 +14,8 @@ import { DrugHypothesis } from '@/components/ai/drug-hypothesis';
 import { ExportButton } from '@/components/reports/export-button';
 import { LiveLoadingState } from '@/components/analysis/live-loading-state';
 import { ScoreMethodology } from '@/components/analysis/score-methodology';
+import { SafetyProfile } from '@/components/analysis/safety-profile';
+import { DiseaseAssociations } from '@/components/analysis/disease-associations';
 import { StructurePanel } from '@/components/protein/structure-panel';
 import { DockingPanel } from '@/components/protein/docking-panel';
 import { CompoundGallery } from '@/components/compounds/compound-gallery';
@@ -29,18 +31,32 @@ import { DeepHypothesis } from '@/components/ai/deep-hypothesis';
 import { MutationImpact } from '@/components/ai/mutation-impact';
 import { PathwayCrosstalk } from '@/components/ai/pathway-crosstalk';
 import { TrialDesign } from '@/components/ai/trial-design';
+import { TargetChat } from '@/components/ai/target-chat';
 import { RegulatoryDashboard } from '@/components/genomics/regulatory-dashboard';
+import { TDLBadge } from '@/components/analysis/tdl-badge';
 import { useRecentSearches } from '@/hooks/use-recent-searches';
+import { useWatchlist } from '@/hooks/use-watchlist';
 import type { TargetProfile, AnalysisProgress } from '@/lib/types/target-profile';
 import { getScoreColor, getScoreLabel } from '@/lib/constants';
 import { formatMs } from '@/lib/utils/format';
 
 const SOURCES = ['Open Targets', 'ChEMBL', 'PubMed', 'ClinicalTrials.gov', 'bioRxiv', 'AlphaFold/PDB', 'AlphaGenome'];
 
+function getTDL(profile: TargetProfile): string {
+  const maxPhase = profile.rawData.chembl.data?.maxClinicalPhase ?? 0;
+  const compoundCount = profile.rawData.chembl.data?.compoundCount ?? 0;
+  const diseaseCount = profile.rawData.openTargets.data?.diseaseAssociationCount ?? 0;
+  if (maxPhase >= 4) return 'Tclin';
+  if (maxPhase >= 1 || compoundCount > 0) return 'Tchem';
+  if (diseaseCount > 0) return 'Tbio';
+  return 'Tdark';
+}
+
 export default function AnalyzePage() {
   const params = useParams();
   const gene = (params.gene as string).toUpperCase();
   const { addSearch } = useRecentSearches();
+  const { addTarget, removeTarget, isInWatchlist } = useWatchlist();
 
   const [profile, setProfile] = useState<TargetProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -205,6 +221,7 @@ export default function AnalyzePage() {
                   >
                     {getScoreLabel(profile.scores.overall)}
                   </span>
+                  <TDLBadge profile={profile} />
                 </div>
                 <p className="text-slate-400">{profile.approvedName}</p>
                 <p className="text-xs text-slate-600 mt-1">
@@ -238,6 +255,40 @@ export default function AnalyzePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <ExportButton profile={profile} />
+                  <button
+                    onClick={() => {
+                      if (isInWatchlist(profile.gene)) {
+                        removeTarget(profile.gene);
+                      } else {
+                        addTarget({
+                          gene: profile.gene,
+                          approvedName: profile.approvedName,
+                          overallScore: profile.scores.overall,
+                          tdl: getTDL(profile),
+                          addedAt: Date.now(),
+                        });
+                      }
+                    }}
+                    className={`px-3 py-2 text-sm border rounded-lg transition-colors flex items-center gap-1.5 ${
+                      isInWatchlist(profile.gene)
+                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                        : 'border-white/10 text-slate-300 hover:bg-white/5'
+                    }`}
+                    title={isInWatchlist(profile.gene) ? 'Remove from Watchlist' : 'Add to Watchlist'}
+                  >
+                    {isInWatchlist(profile.gene) ? (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                    )}
+                    <span className="hidden sm:inline">
+                      {isInWatchlist(profile.gene) ? 'In Watchlist' : 'Watchlist'}
+                    </span>
+                  </button>
                   <Link
                     href={`/compare?a=${profile.gene}`}
                     className="px-3 py-2 text-sm border border-white/10 rounded-lg text-slate-300 hover:bg-white/5 transition-colors"
@@ -282,6 +333,10 @@ export default function AnalyzePage() {
               </div>
               <DimensionGrid dimensions={profile.scores.dimensions} />
             </div>
+
+            {/* Safety Assessment & Disease Associations */}
+            <SafetyProfile profile={profile} />
+            <DiseaseAssociations profile={profile} />
 
             {/* ── Section divider ── */}
             <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-2" />
@@ -354,6 +409,12 @@ export default function AnalyzePage() {
             <EvidenceConflicts profile={profile} />
             <DeepHypothesis profile={profile} />
             <TrialDesign profile={profile} />
+
+            {/* ── Section divider ── */}
+            <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-2" />
+
+            {/* AI Chat — Ask Anything */}
+            <TargetChat profile={profile} />
           </div>
         )}
       </main>

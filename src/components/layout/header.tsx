@@ -31,6 +31,7 @@ export function Header() {
           <Link href="/compare" className="text-sm text-slate-400 hover:text-white transition-colors">Compare</Link>
           <Link href="/discover" className="text-sm text-slate-400 hover:text-white transition-colors">Discover</Link>
           <Link href="/lab" className="text-sm text-slate-400 hover:text-white transition-colors">Lab</Link>
+          <Link href="/watchlist" className="text-sm text-slate-400 hover:text-white transition-colors">Watchlist</Link>
           <a href="https://github.com/Bionicsdemo/targetradar" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-white transition-colors">GitHub</a>
         </nav>
 
@@ -59,6 +60,7 @@ export function Header() {
           <Link href="/compare" onClick={() => setMobileOpen(false)} className="block py-2 text-sm text-slate-400 hover:text-white transition-colors">Compare</Link>
           <Link href="/discover" onClick={() => setMobileOpen(false)} className="block py-2 text-sm text-slate-400 hover:text-white transition-colors">Discover</Link>
           <Link href="/lab" onClick={() => setMobileOpen(false)} className="block py-2 text-sm text-slate-400 hover:text-white transition-colors">Lab</Link>
+          <Link href="/watchlist" onClick={() => setMobileOpen(false)} className="block py-2 text-sm text-slate-400 hover:text-white transition-colors">Watchlist</Link>
           <a href="https://github.com/Bionicsdemo/targetradar" target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)} className="block py-2 text-sm text-slate-400 hover:text-white transition-colors">GitHub</a>
         </nav>
       )}
