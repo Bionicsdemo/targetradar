@@ -330,27 +330,21 @@ export function DockingPanel({
         }
       }
 
-      // Step 2: Download PDB
+      // Step 2: Download PDB via server-side trim proxy (handles large files)
       let pdbData: string | null = null;
       const targetPdbId = dockingInfo?.pdbId ?? pdbId;
       const ligResn = dockingInfo?.ligandId ?? null;
 
       if (targetPdbId) {
         setLoadingMsg(`Fetching structure: ${targetPdbId.toUpperCase()}...`);
-        const res = await fetch(`https://files.rcsb.org/download/${targetPdbId}.pdb`, {
-          signal: AbortSignal.timeout(15000),
-        });
+        // Use our server-side proxy that trims large PDBs to binding site
+        const trimUrl = ligResn
+          ? `/api/pdb/trim?pdbId=${targetPdbId}&ligand=${ligResn}&radius=20`
+          : `/api/pdb/trim?pdbId=${targetPdbId}`;
+        const res = await fetch(trimUrl, { signal: AbortSignal.timeout(25000) });
         if (res.ok) {
-          let text = await res.text();
-
-          // For large PDB files (>1.5MB), trim to binding site region only
-          // This prevents browser crashes for huge proteins like PRKDC (3.3MB, 39K atoms)
-          if (text.length > 1_500_000 && ligResn) {
-            setLoadingMsg('Large structure — extracting binding site region...');
-            text = trimPDBToBindingSite(text, ligResn, 20);
-          }
-
-          if (text.length > 0) pdbData = text;
+          pdbData = await res.text();
+          if (pdbData.length < 100) pdbData = null; // empty/error response
         }
       }
 
@@ -360,10 +354,13 @@ export function DockingPanel({
         const afRes = await fetch(`https://alphafold.ebi.ac.uk/files/AF-${uniprotId}-F1-model_v6.pdb`, {
           signal: AbortSignal.timeout(10000),
         });
-        if (afRes.ok) pdbData = await afRes.text();
+        if (afRes.ok) {
+          const text = await afRes.text();
+          if (text.length > 200) pdbData = text;
+        }
       }
 
-      if (!pdbData) throw new Error('No structure available (PDB and AlphaFold both failed)');
+      if (!pdbData) throw new Error('No structure available — this protein may be too large for AlphaFold');
 
       // Step 3: Render
       setLoadingMsg('Rendering binding site...');
