@@ -305,7 +305,7 @@ export function DockingPanel({
       }
 
       const viewer = $3Dmol.createViewer(containerRef.current, {
-        backgroundColor: '#0A0A1A',
+        backgroundColor: '#111827',
         antialias: true,
       }) as DockViewer3D;
       viewerRef.current = viewer;
@@ -325,57 +325,52 @@ export function DockingPanel({
               'NAG','MAN','BGC','BU1','BEN','1PE','P6G','MLI','AEDO','BEDO'] },
           };
 
-      // ── STEP 1: Style the entire protein as translucent indigo ribbon ──
+      // ── STEP 1: Protein backbone — bright enough to see clearly ──
       viewer.setStyle({}, {
-        cartoon: { color: '#6366F1', opacity: 0.30, thickness: 0.4, arrows: true },
+        cartoon: { color: '#818CF8', opacity: 0.65, thickness: 0.4, arrows: true },
       });
 
-      // ── STEP 2: Style the LIGAND as bright green sticks (must come before pocket) ──
+      // ── STEP 2: Ligand — bright, thick, impossible to miss ──
       viewer.setStyle(ligandSel, {
-        stick: { radius: 0.3, colorscheme: 'greenCarbon' },
+        stick: { radius: 0.35, colorscheme: 'greenCarbon' },
       });
-      // Also add sphere representation for key atoms to make ligand pop
       viewer.addStyle(ligandSel, {
-        sphere: { scale: 0.3, colorscheme: 'greenCarbon' },
+        sphere: { scale: 0.35, colorscheme: 'greenCarbon' },
       });
 
-      // ── STEP 3: Highlight binding pocket residues near the ligand ──
-      // Select protein residues within 5A of the ligand
+      // ── STEP 3: Binding pocket — bright teal, clearly different from rest ──
       const pocketSel: Record<string, unknown> = {
         within: { distance: 5, sel: ligandSel },
         byres: true,
-        hetflag: false, // protein only, not the ligand itself
+        hetflag: false,
       };
-
-      // Override pocket cartoon to be brighter teal
       viewer.setStyle(pocketSel, {
-        cartoon: { color: '#14B8A6', opacity: 0.90, thickness: 0.5, arrows: true },
+        cartoon: { color: '#2DD4BF', opacity: 1.0, thickness: 0.6, arrows: true },
       });
-      // Add thin side-chain sticks for pocket residues
       viewer.addStyle(pocketSel, {
-        stick: { radius: 0.1, color: '#94A3B8' },
+        stick: { radius: 0.12, colorscheme: 'whiteCarbon' },
       });
 
-      // ── STEP 4: Re-style ligand AGAIN to ensure it overrides any pocket selection ──
+      // ── STEP 4: Re-apply ligand to guarantee it's on top ──
       viewer.setStyle(ligandSel, {
-        stick: { radius: 0.3, colorscheme: 'greenCarbon' },
+        stick: { radius: 0.35, colorscheme: 'greenCarbon' },
       });
       viewer.addStyle(ligandSel, {
-        sphere: { scale: 0.3, colorscheme: 'greenCarbon' },
+        sphere: { scale: 0.35, colorscheme: 'greenCarbon' },
       });
 
-      // ── STEP 5: Add translucent pocket surface ──
+      // ── STEP 5: Pocket surface — slightly more visible ──
       try {
         viewer.addSurface(
           'VDW',
-          { opacity: 0.10, color: '#F59E0B' },
+          { opacity: 0.18, color: '#FBBF24' },
           { within: { distance: 6, sel: ligandSel }, byres: true },
         );
       } catch {
-        // Surface rendering can fail on some structures — skip silently
+        // Surface rendering can fail — skip
       }
 
-      // ── STEP 6: Camera + animation ──
+      // ── STEP 6: Camera zoomed to ligand + slow rotation ──
       viewer.zoomTo(ligandSel);
       viewer.spin('y', 0.3);
       viewer.render();
