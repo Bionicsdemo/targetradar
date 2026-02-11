@@ -1,9 +1,18 @@
+import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Warmup } from '@/components/layout/warmup';
 import { SearchBar } from '@/components/search/search-bar';
 import { SearchSuggestions } from '@/components/search/search-suggestions';
 import { RecentSearches } from '@/components/search/recent-searches';
+
+const EXAMPLE_TARGETS = [
+  { gene: 'EGFR', name: 'Epidermal Growth Factor Receptor', tag: 'Oncology', color: '#3B82F6' },
+  { gene: 'KRAS', name: 'GTPase KRas', tag: 'Undruggable → Drugged', color: '#8B5CF6' },
+  { gene: 'TP53', name: 'Tumor Protein P53', tag: 'Most Mutated', color: '#EF4444' },
+  { gene: 'PCSK9', name: 'Proprotein Convertase', tag: 'Approved Drugs', color: '#10B981' },
+  { gene: 'BRCA1', name: 'BRCA1 DNA Repair', tag: 'PARP Inhibitors', color: '#EC4899' },
+];
 
 const PERSONAS = [
   { icon: '🎓', title: 'PhD Students', desc: 'Choose thesis targets with confidence' },
@@ -42,7 +51,53 @@ export default function HomePage() {
 
             <SearchBar autoFocus />
             <SearchSuggestions />
+
+            {/* Try it — example targets */}
+            <div className="mt-6 mb-2">
+              <p className="text-xs text-slate-500 mb-3">Try a target:</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {EXAMPLE_TARGETS.map((t) => (
+                  <Link
+                    key={t.gene}
+                    href={`/analyze/${t.gene}`}
+                    className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/5 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05] transition-all"
+                  >
+                    <span className="text-sm font-bold font-mono text-white group-hover:text-blue-400 transition-colors">{t.gene}</span>
+                    <span className="hidden sm:inline text-[10px] text-slate-500">{t.name}</span>
+                    <span
+                      className="px-1.5 py-0.5 text-[9px] font-semibold rounded"
+                      style={{ backgroundColor: t.color + '15', color: t.color }}
+                    >
+                      {t.tag}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
             <RecentSearches />
+          </div>
+        </section>
+
+        {/* Stats banner */}
+        <section className="border-y border-white/5 bg-white/[0.01]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
+              {[
+                { value: '7', label: 'Live APIs', sub: 'queried in parallel' },
+                { value: '16', label: 'AI Features', sub: 'powered by Opus 4.6' },
+                { value: '7', label: 'Dimensions', sub: 'transparent scoring' },
+                { value: '32', label: 'API Routes', sub: 'Next.js 16' },
+                { value: '92', label: 'Unit Tests', sub: 'all passing' },
+                { value: 'MIT', label: 'License', sub: 'free & open source' },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <div className="text-2xl font-bold text-white">{stat.value}</div>
+                  <div className="text-xs font-medium text-slate-300">{stat.label}</div>
+                  <div className="text-[10px] text-slate-600">{stat.sub}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 

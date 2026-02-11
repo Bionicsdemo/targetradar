@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   title: 'TargetRadar — Drug Target Validation in 30 Seconds',
   description: 'Free, open-source drug target validation platform. Analyze any gene target across 7 dimensions — including AlphaGenome regulatory genomics — with AI-powered insights. Break the barrier of $50-200K/year enterprise tools.',
   keywords: ['drug target', 'target validation', 'drug discovery', 'bioinformatics', 'AI', 'open source'],
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+  },
 };
 
 export default function RootLayout({
