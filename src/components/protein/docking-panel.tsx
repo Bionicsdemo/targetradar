@@ -441,7 +441,6 @@ export function DockingPanel({
   }, [showSurface, dockingLigand]);
 
   if (!hasStructure) return null;
-  if (ligandBoundCount === 0 && compounds.length === 0) return null;
 
   const topLigandCompounds = compounds.filter((c) => c.smiles).slice(0, 8);
 
