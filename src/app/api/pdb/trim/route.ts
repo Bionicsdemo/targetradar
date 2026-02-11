@@ -29,17 +29,32 @@ export async function GET(request: NextRequest) {
 
     const fullPdb = await res.text();
     const lines = fullPdb.split('\n');
+    const MAX_ATOMS = 8000; // 3Dmol.js handles ~8K atoms smoothly
 
-    // If no ligand specified or PDB is small, return as-is (just strip water)
-    if (!ligand || fullPdb.length < 1_500_000) {
+    // Small PDB — return as-is (just strip water)
+    if (fullPdb.length < 800_000) {
       const stripped = lines.filter(l =>
         !(l.startsWith('HETATM') && (l.substring(17, 20).trim() === 'HOH' || l.substring(17, 20).trim() === 'WAT'))
       ).join('\n');
       return new Response(stripped, {
-        headers: {
-          'Content-Type': 'chemical/x-pdb',
-          'Cache-Control': 'public, max-age=86400',
-        },
+        headers: { 'Content-Type': 'chemical/x-pdb', 'Cache-Control': 'public, max-age=86400' },
+      });
+    }
+
+    // Large PDB without ligand — keep only chain A, cap at MAX_ATOMS
+    if (!ligand) {
+      let atomCount = 0;
+      const chainA = lines.filter(l => {
+        if (!l.startsWith('ATOM') && !l.startsWith('HETATM')) return true;
+        const resn = l.substring(17, 20).trim();
+        if (resn === 'HOH' || resn === 'WAT') return false;
+        const chain = l.substring(21, 22);
+        if (chain !== 'A' && chain !== ' ') return false;
+        atomCount++;
+        return atomCount <= MAX_ATOMS;
+      }).join('\n');
+      return new Response(chainA, {
+        headers: { 'Content-Type': 'chemical/x-pdb', 'Cache-Control': 'public, max-age=86400' },
       });
     }
 
