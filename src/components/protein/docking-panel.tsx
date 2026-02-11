@@ -312,90 +312,68 @@ export function DockingPanel({
 
       viewer.addModel(pdbData, 'pdb');
 
-      // Known ligand residue name from RCSB GraphQL (e.g., "KY9" for EGFR)
-      const ligandResn = dockingInfo?.ligandId ?? null;
+      // Known ligand residue name from RCSB (e.g. "KY9" for EGFR)
+      const lig = dockingInfo?.ligandId ?? null;
 
-      // ══════════════════════════════════════════════════════
-      // STEP 1: ENTIRE PROTEIN — semi-transparent cartoon
-      // ══════════════════════════════════════════════════════
+      // ── 1. PROTEIN: semi-transparent indigo cartoon ──
       viewer.setStyle({}, {
         cartoon: { color: '#818CF8', opacity: 0.55, thickness: 0.4 },
       });
 
-      // ══════════════════════════════════════════════════════
-      // STEP 2: HIDE WATER — make water molecules invisible
-      // ══════════════════════════════════════════════════════
-      viewer.setStyle({ resn: 'HOH' }, {});
-      viewer.setStyle({ resn: 'WAT' }, {});
-
-      // ══════════════════════════════════════════════════════
-      // STEP 3: DRUG LIGAND — bright green sticks + spheres
-      // ══════════════════════════════════════════════════════
-      if (ligandResn) {
-        // Known drug ligand from RCSB
-        viewer.setStyle({ resn: ligandResn }, {
-          stick: { radius: 0.35, colorscheme: 'greenCarbon' },
-        });
-        viewer.addStyle({ resn: ligandResn }, {
-          sphere: { scale: 0.3, colorscheme: 'greenCarbon' },
-        });
-      } else {
-        // No known ligand — show ALL heteroatoms as sticks (except water)
-        viewer.setStyle({ hetflag: true }, {
-          stick: { radius: 0.25, colorscheme: 'greenCarbon' },
-        });
-        // Re-hide water
-        viewer.setStyle({ resn: 'HOH' }, {});
-        viewer.setStyle({ resn: 'WAT' }, {});
-      }
-
-      // ══════════════════════════════════════════════════════
-      // STEP 4: BINDING POCKET — teal ribbon + side-chain sticks
-      // Residues within 5A of the ligand
-      // ══════════════════════════════════════════════════════
-      const ligSel = ligandResn ? { resn: ligandResn } : { hetflag: true };
+      // ── 2. ALL LIGANDS (non-water heteroatoms): green sticks + spheres ──
+      // This is the EXACT same pattern that works in protein-viewer.tsx line 200
       viewer.setStyle(
-        { within: { distance: 5, sel: ligSel }, byres: true, atom: ['CA', 'C', 'N', 'O', 'CB'] },
-        { cartoon: { color: '#2DD4BF', opacity: 1.0, thickness: 0.6 } },
-      );
-      viewer.addStyle(
-        { within: { distance: 5, sel: ligSel }, byres: true },
-        { stick: { radius: 0.1, color: '#CBD5E1' } },
+        { hetflag: true, resn: ['HOH', 'WAT'], invert: true },
+        {
+          stick: { radius: 0.3, colorscheme: 'greenCarbon' },
+          sphere: { scale: 0.3, colorscheme: 'greenCarbon' },
+        },
       );
 
-      // ══════════════════════════════════════════════════════
-      // STEP 5: RE-APPLY LIGAND (so pocket doesn't override it)
-      // ══════════════════════════════════════════════════════
-      if (ligandResn) {
-        viewer.setStyle({ resn: ligandResn }, {
-          stick: { radius: 0.35, colorscheme: 'greenCarbon' },
-        });
-        viewer.addStyle({ resn: ligandResn }, {
-          sphere: { scale: 0.3, colorscheme: 'greenCarbon' },
-        });
+      // ── 3. BINDING POCKET: teal cartoon + thin sticks for residues near ligand ──
+      const ligSel = lig
+        ? { resn: lig }
+        : { hetflag: true, resn: ['HOH', 'WAT'], invert: true };
+
+      // Pocket residues — protein atoms within 5A of ligand
+      viewer.setStyle(
+        { within: { distance: 5, sel: ligSel }, byres: true },
+        {
+          cartoon: { color: '#2DD4BF', opacity: 1.0, thickness: 0.6 },
+          stick: { radius: 0.1, color: '#CBD5E1' },
+        },
+      );
+
+      // ── 4. RE-APPLY LIGAND so pocket setStyle doesn't override it ──
+      if (lig) {
+        viewer.setStyle(
+          { resn: lig },
+          {
+            stick: { radius: 0.35, colorscheme: 'greenCarbon' },
+            sphere: { scale: 0.3, colorscheme: 'greenCarbon' },
+          },
+        );
+      } else {
+        viewer.setStyle(
+          { hetflag: true, resn: ['HOH', 'WAT'], invert: true },
+          {
+            stick: { radius: 0.3, colorscheme: 'greenCarbon' },
+            sphere: { scale: 0.3, colorscheme: 'greenCarbon' },
+          },
+        );
       }
 
-      // ══════════════════════════════════════════════════════
-      // STEP 6: POCKET SURFACE — translucent amber around binding site
-      // ══════════════════════════════════════════════════════
+      // ── 5. POCKET SURFACE: translucent amber ──
       try {
         viewer.addSurface(
           'VDW',
           { opacity: 0.15, color: '#FBBF24' },
           { within: { distance: 6, sel: ligSel }, byres: true },
         );
-      } catch {
-        // Surface can fail on some structures
-      }
+      } catch { /* surface can fail */ }
 
-      // ══════════════════════════════════════════════════════
-      // STEP 7: CAMERA — zoom to the drug binding site
-      // ══════════════════════════════════════════════════════
-      if (ligandResn) {
-        viewer.zoomTo({ resn: ligandResn });
-      } else {
-        viewer.zoomTo({ hetflag: true });
-      }
+      // ── 6. ZOOM to the drug ligand + slow spin ──
+      viewer.zoomTo(ligSel);
       viewer.spin('y', 0.3);
       viewer.render();
 
