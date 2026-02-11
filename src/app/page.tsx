@@ -101,7 +101,137 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* How it works */}
+        {/* Unified Pipeline */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-xs text-indigo-400 mb-4">
+              The Complete Stack
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+              The Unified Stack for Drug Target Validation
+            </h2>
+            <p className="text-slate-400 max-w-2xl mx-auto">
+              Every target decision needs three things: unified data, transparent scoring, and AI-powered synthesis.
+              TargetRadar provides the foundational layer that makes all three possible.
+            </p>
+          </div>
+
+          {/* Pipeline flow */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mb-12">
+            {[
+              {
+                step: '01',
+                title: 'Data Ingestion',
+                desc: '7 authoritative databases queried in parallel. Real-time data — no stale caches, no mock data.',
+                icon: (
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                    <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M20 12L9 23" strokeLinecap="round" strokeLinejoin="round" opacity={0.3} />
+                  </svg>
+                ),
+                color: '#3B82F6',
+                items: ['Open Targets', 'ChEMBL', 'PubMed', 'ClinicalTrials.gov', 'bioRxiv', 'AlphaFold/PDB', 'Ensembl'],
+              },
+              {
+                step: '02',
+                title: 'Scoring Engine',
+                desc: '7 pure scoring functions with transparent weights, caps, and thresholds. Every number is auditable.',
+                icon: (
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                    <path d="M3 3v18h18" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M7 17l4-8 4 4 6-10" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ),
+                color: '#8B5CF6',
+                items: ['Weighted average', 'Pure functions', 'Named components', 'Cap thresholds', '92 unit tests'],
+              },
+              {
+                step: '03',
+                title: 'AI Synthesis',
+                desc: '16 Opus 4.6 features connecting dots across dimensions that raw numbers never reveal.',
+                icon: (
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                    <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ),
+                color: '#EC4899',
+                items: ['Target narratives', 'Drug hypotheses', 'Evidence conflicts', 'Trial design', 'Autonomous discovery'],
+              },
+              {
+                step: '04',
+                title: 'Actionable Output',
+                desc: 'Professional reports, 3D docking, compound intelligence — ready for investment memos or grant applications.',
+                icon: (
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                    <path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ),
+                color: '#10B981',
+                items: ['.docx reports', '.xlsx data', '3D docking', 'Drug-likeness', 'Compare mode', 'Watchlist'],
+              },
+            ].map((phase, i) => (
+              <div key={phase.step} className="relative">
+                {/* Connector arrow (hidden on mobile, first 3 items) */}
+                {i < 3 && (
+                  <div className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 z-10">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6h8M7 3l3 3-3 3" stroke="#475569" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                )}
+                <div className="rounded-xl bg-[var(--surface-1)] border border-white/5 p-5 h-full hover:border-white/10 transition-all group">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: phase.color + '15', color: phase.color }}
+                    >
+                      {phase.icon}
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-mono text-slate-600">STEP {phase.step}</div>
+                      <div className="text-sm font-semibold text-white">{phase.title}</div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed mb-3">{phase.desc}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {phase.items.map((item) => (
+                      <span key={item} className="px-1.5 py-0.5 text-[9px] rounded bg-white/5 text-slate-500">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Industries / Use cases — like Mantis */}
+          <div className="rounded-xl border border-white/5 bg-[var(--surface-1)] p-6 sm:p-8">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-semibold text-white mb-1">Purpose-Built for Drug Discovery Decision-Making</h3>
+              <p className="text-sm text-slate-400">
+                From academic research to clinical investment — TargetRadar equips organizations with validated, production-ready target intelligence.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { icon: '🎓', title: 'Academic Research', desc: 'PhD students and labs choosing thesis targets and grant proposals with data-driven confidence.' },
+                { icon: '💊', title: 'Pharma & Biotech', desc: 'Small-to-mid pharma teams doing target validation without $200K/year enterprise tools.' },
+                { icon: '💰', title: 'Biotech Investment', desc: 'Investors performing due diligence on target pipelines with transparent, auditable scoring.' },
+                { icon: '🏥', title: 'Clinical Development', desc: 'AI-designed trial protocols, safety assessment, and competitive landscape for clinical teams.' },
+              ].map((uc) => (
+                <div key={uc.title} className="p-4 rounded-lg bg-white/[0.02] border border-white/5">
+                  <span className="text-2xl block mb-2">{uc.icon}</span>
+                  <h4 className="text-sm font-semibold text-white mb-1">{uc.title}</h4>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">{uc.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* How it works — Seven Dimensions */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
             <h2 className="text-2xl font-bold text-white mb-2">
