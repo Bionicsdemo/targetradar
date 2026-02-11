@@ -6,6 +6,101 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.7.0] — 2026-02-11
+
+### Added — Production Deployment, Professional Reports, UI Polish & Docking
+
+**Deployment:**
+- Deployed to DigitalOcean droplet at `http://138.68.7.97:4000` (pm2 managed, auto-restart)
+- GitHub repository: `https://github.com/Bionicsdemo/targetradar`
+- Demo cache pre-warming endpoint (`/api/warmup`) for instant EGFR/KRAS/BRCA1 loading
+- Auto-warmup component on home page load
+
+**Real Protein-Ligand Docking:**
+- New `/api/docking` endpoint — searches RCSB PDB for co-crystal structures with real drug ligands
+- Filters out buffer/salt molecules (39 common buffers), selects drug-like ligands (MW > 200)
+- Uses RCSB GraphQL API for ligand identification and resolution sorting
+- EGFR finds PDB 8A27 with drug KY9 at 1.07A resolution; TP53 finds 6GGC with EXN at 1.24A
+- 3Dmol.js rendering: translucent indigo ribbon (protein) + teal binding pocket + green-carbon sticks (drug ligand) + amber pocket surface
+- "Open in RCSB 3D" link to Molstar viewer for full RCSB-grade visualization
+
+**Compound Images (2-source fallback):**
+- PubChem PNG as primary source via server-side proxy
+- CDK Depict SVG as fallback for compounds PubChem doesn't have (e.g., MYC inhibitors)
+- SmilesDrawer (npm) as client-side fallback for instant dark-mode rendering
+- All MYC compounds now show images (was 0/5, now 5/5)
+
+**Enhanced .docx Report (285 → 979 lines):**
+- Top Compounds table (11 columns: ChEMBL ID, Name, Type, Phase, MW, LogP, TPSA, HBA, HBD, RO5, pChEMBL)
+- Clinical Trials overview (summary stats, trials by status, top sponsors, notable studies)
+- AlphaGenome Regulatory Landscape (feature counts, gene info, complexity interpretation)
+- Structural Biology (PDB count, pLDDT, resolution, ligand-bound structures)
+- Literature Analysis (pub counts, recency ratio, adaptive interpretation)
+- Innovation Signal (preprint velocity, recent titles listed)
+- Professional disclaimer and footer with GitHub URL
+- Blue header rows, alternating row shading, section dividers throughout
+
+**Enhanced .xlsx Spreadsheet (191 → 420 lines, 8 → 10 sheets):**
+- Sheet 1 (Summary): merged section headers, colored score bars, weighted contributions
+- Sheet 3 (Compounds): rebuilt with 15 columns, phase coloring, RO5 conditional formatting
+- Sheet 4 (Clinical Trials): summary stats section at top, status/phase coloring
+- NEW Sheet 9 (Score Components Detail): all components across all dimensions with % of max
+- NEW Sheet 10 (Drug-Likeness Assessment): Lipinski + Veber PASS/FAIL with red violation highlights
+- All sheets: frozen headers, auto-filters, alternating rows, conditional formatting
+
+**UI Enhancements:**
+- Score Methodology panel — expandable "How is the Overall Score calculated?" with formula, weight bars, score interpretation
+- Example targets on landing page (EGFR, KRAS, TP53, PCSK9, BRCA1) — one-click demo
+- Stats banner: "7 APIs · 16 AI Features · 7 Dimensions · 32 Routes · 92 Tests · MIT"
+- Custom radar favicon (SVG)
+- Compound cards: phase-colored left border, gradient overlay, ChEMBL ID on image, expand chevron
+- Compound expanded view: full molecular properties, bioactivity/potency class, development status, ChEMBL link
+- Docking panel: info badges (Co-crystal/AlphaFold source, ligand name, pocket count)
+- Dimension cards: animated progress bar at top (green >70, amber 40-70, red <40)
+- Overall score: text-5xl with glow effect and descriptive label (Excellent/Good/Moderate/Low)
+- Gradient section dividers between major sections
+- GitHub link in header and footer with icon
+
+**AlphaFold v6 Migration:**
+- Updated all AlphaFold URLs from `model_v4.pdb` → `model_v6.pdb` (v4 returns 404)
+- Both `protein-viewer.tsx` and `docking-panel.tsx` updated
+
+**PDB Search Improvement:**
+- PDB search now uses UniProt accession (precise) instead of full-text gene name search
+- Prioritizes structures with non-polymer entities (ligands) over antibody/DNA structures
+- EGFR now loads actual kinase+drug structures instead of antibody fragments
+
+**Natural Language Search:**
+- `/api/ai/interpret` — Opus 4.6 extracts gene symbols from free-text queries
+- Search bar "Try AI Search" fallback when no autocomplete matches
+
+**AI Streaming:**
+- `/api/ai/narrative/stream` — SSE endpoint with real-time token display
+- `target-narrative.tsx` shows typewriter effect with non-streaming fallback
+
+**Mobile Responsive (375px):**
+- Hamburger nav menu for mobile
+- 13 files audited and fixed: stacking grids, responsive radar chart, scrollable tables
+- Viewport meta tag added
+
+**Zod Runtime Validation:**
+- `validateResponse()` utility wired into Open Targets, ChEMBL, AlphaFold services
+- Defensive validation: logs warnings but doesn't break on unexpected API shapes
+
+**Testing:**
+- vitest v4.0.18 with 92 test cases covering all 7 scorers + engine + linearScale
+- `npm test` runs clean in 351ms
+
+### Fixed
+- AlphaFold v4 → v6 (v4 returns 404 since API upgrade)
+- ChEMBL image API down (405) — bypassed with PubChem + CDK Depict fallback
+- PDB search returning antibody structures instead of kinase+drug co-crystals
+- 3D conformer infinite loading — 12-second timeout + AbortSignal on fetch
+- Client-side fetch timeout on analyze page (60s timeout + better error messages)
+- `EARLY_PHASE1` clinical trials now scored
+
+---
+
 ## [0.6.0] — 2026-02-10
 
 ### Added — Molecule Testing Lab, DeepTarget Discovery, Molecular Docking & Extended AI

@@ -735,9 +735,9 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - [x] All 7 data services returning real data (incl. AlphaGenome/Ensembl)
 - [x] Scoring engine producing correct scores for 7 dimensions
 - [x] Radar chart animation with 7-vertex heptagon
-- [x] AI narratives referencing regulatory genomics data (12 AI features)
+- [x] AI narratives referencing regulatory genomics data (16 AI features, Opus 4.6)
 - [x] .docx report with 7 dimension breakdowns
-- [x] .xlsx export with 8 sheets (incl. Regulatory Genomics)
+- [x] .xlsx export with 10 sheets (incl. Drug-Likeness, Score Components Detail)
 - [x] Comparison mode with 7-axis overlaid radar charts
 - [x] Loading state showing 7 API completions in real-time
 - [x] Cinema-grade 3D protein visualization (3Dmol.js)
@@ -757,11 +757,25 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - [x] GraphQL error detection in graphqlFetch
 - [x] All form inputs have id/name attributes (accessibility)
 - [x] TypeScript strict mode, zero errors (`tsc --noEmit`)
-- [x] Production build succeeds (`next build`) — 29 routes, 0 errors
-- [x] All 5 test targets verified (EGFR 89, TP53 66, BRCA1 67, KRAS ~78, PCSK9 ~79)
-- [ ] Demo mode pre-warming EGFR, KRAS, BRCA1 caches
-- [ ] Demo flow rehearsed and timed
-- [ ] Mobile responsive at 375px width
+- [x] Production build succeeds (`next build`) — 32 routes, 0 errors
+- [x] All 5 test targets verified (EGFR 89, TP53 68, BRCA1 67, KRAS 80, PCSK9 78)
+- [x] Demo mode pre-warming EGFR, KRAS, BRCA1 caches (`/api/warmup`)
+- [x] Mobile responsive at 375px width (13 files audited, hamburger nav)
+- [x] Deployed to DigitalOcean: `http://138.68.7.97:4000` (pm2, auto-restart)
+- [x] GitHub: `https://github.com/Bionicsdemo/targetradar`
+- [x] Real co-crystal docking via `/api/docking` (RCSB GraphQL ligand search)
+- [x] Compound images: PubChem PNG → CDK Depict SVG → SmilesDrawer fallback chain
+- [x] AlphaFold v6 migration (v4 returns 404)
+- [x] vitest: 92 tests passing
+- [x] Natural language search (`/api/ai/interpret`)
+- [x] AI streaming (`/api/ai/narrative/stream`)
+- [x] Score methodology panel (transparent formula + weights)
+- [x] Example targets + stats banner on landing page
+- [x] Custom favicon
+- [x] Enhanced .docx report (979 lines, 13 sections)
+- [x] Enhanced .xlsx report (10 sheets, conditional formatting, drug-likeness)
+- [ ] Demo video recorded (3 minutes, Loom)
+- [ ] Submission on CV platform
 
 ---
 
@@ -780,5 +794,9 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 | ChEMBL null properties | Antibodies/biologics have `molecule_properties: null` | Skip in drug-likeness, filter to small molecules for RO5 |
 | Anthropic empty content | `message.content` can be empty array `[]` | `const block = content[0]; block?.type === 'text'` |
 | PDB structure 404 | Some PDB IDs are obsolete or unavailable | Fallback chain: PDB → AlphaFold → error state |
+| AlphaFold v4 → v6 | AlphaFold DB upgraded, `model_v4.pdb` returns 404 | Use `model_v6.pdb` everywhere |
+| ChEMBL image API 405 | ChEMBL SVG image endpoint returns 405 for all requests | Bypass ChEMBL, use PubChem PNG + CDK Depict SVG fallback |
+| PDB search antibodies | Full-text gene search returns antibody Fab fragments, not kinase structures | Search by UniProt accession + filter for non-polymer entities |
+| RCSB buffer ligands | PDB structures contain GOL, PEG, SO4, EDO etc. as "ligands" | Exclude 39 common buffers, require MW > 200 Da for drug-like |
 | Tailwind class purging | Dynamic classes like `border-${color}` not compiled | Explicit class name maps with full Tailwind classes |
 | Recharts Tooltip types | `value` is `number | undefined`, `name` is `string | undefined` | Type guards before using formatter params |
