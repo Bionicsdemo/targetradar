@@ -114,27 +114,30 @@ export function ProteinViewer({
       let pdbData: string | null = null;
       let source: 'pdb' | 'alphafold' = 'pdb';
 
+      // Max PDB size: 1.5MB — very large proteins (e.g., PRKDC) crash the browser
+      const MAX_PDB = 1_500_000;
+
       if (pdbId) {
         setLoadingStage(`Fetching PDB: ${pdbId.toUpperCase()}...`);
         const res = await fetch(`https://files.rcsb.org/download/${pdbId}.pdb`);
         if (res.ok) {
-          pdbData = await res.text();
-          source = 'pdb';
-        } else if (uniprotId) {
-          // PDB failed — fall back to AlphaFold
-          setLoadingStage(`PDB unavailable, fetching AlphaFold: ${uniprotId}...`);
+          const text = await res.text();
+          if (text.length <= MAX_PDB) { pdbData = text; source = 'pdb'; }
+        }
+        if (!pdbData && uniprotId) {
+          setLoadingStage(`Trying AlphaFold: ${uniprotId}...`);
           const afRes = await fetch(`https://alphafold.ebi.ac.uk/files/AF-${uniprotId}-F1-model_v6.pdb`);
           if (afRes.ok) {
-            pdbData = await afRes.text();
-            source = 'alphafold';
+            const text = await afRes.text();
+            if (text.length <= MAX_PDB) { pdbData = text; source = 'alphafold'; }
           }
         }
       } else if (uniprotId) {
         setLoadingStage(`Fetching AlphaFold: ${uniprotId}...`);
         const res = await fetch(`https://alphafold.ebi.ac.uk/files/AF-${uniprotId}-F1-model_v6.pdb`);
         if (res.ok) {
-          pdbData = await res.text();
-          source = 'alphafold';
+          const text = await res.text();
+          if (text.length <= MAX_PDB) { pdbData = text; source = 'alphafold'; }
         }
       }
 

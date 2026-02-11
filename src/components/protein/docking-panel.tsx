@@ -276,12 +276,22 @@ export function DockingPanel({
       let pdbData: string | null = null;
       const targetPdbId = dockingInfo?.pdbId ?? pdbId;
 
+      // Max PDB size: 1.5MB — larger structures (e.g., PRKDC 3.3MB) crash the browser
+      const MAX_PDB_BYTES = 1_500_000;
+
       if (targetPdbId) {
         setLoadingMsg(`Fetching structure: ${targetPdbId.toUpperCase()}...`);
         const res = await fetch(`https://files.rcsb.org/download/${targetPdbId}.pdb`, {
           signal: AbortSignal.timeout(10000),
         });
-        if (res.ok) pdbData = await res.text();
+        if (res.ok) {
+          const text = await res.text();
+          if (text.length <= MAX_PDB_BYTES) {
+            pdbData = text;
+          } else {
+            setLoadingMsg('Structure too large for browser rendering, trying AlphaFold...');
+          }
+        }
       }
 
       // Fallback to AlphaFold
@@ -290,10 +300,15 @@ export function DockingPanel({
         const afRes = await fetch(`https://alphafold.ebi.ac.uk/files/AF-${uniprotId}-F1-model_v6.pdb`, {
           signal: AbortSignal.timeout(10000),
         });
-        if (afRes.ok) pdbData = await afRes.text();
+        if (afRes.ok) {
+          const text = await afRes.text();
+          if (text.length <= MAX_PDB_BYTES) {
+            pdbData = text;
+          }
+        }
       }
 
-      if (!pdbData) throw new Error('No structure available (PDB and AlphaFold both failed)');
+      if (!pdbData) throw new Error('Structure too large or unavailable for interactive 3D rendering');
 
       // Step 3: Render
       setLoadingMsg('Rendering binding site...');
